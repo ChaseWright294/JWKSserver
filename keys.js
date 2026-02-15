@@ -21,15 +21,29 @@ function generateKeyPair(isExpired = false) {
     const expireTime = isExpired
         ? Date.now() - 1000 // Set expiration in the past for keys initialized as expired
         : Date.now() + 60 * 1000; //keys valid for 1 minute (for testing purposes)   
-    const keyData = {
+    
+    const keyData = { //store key data in object to push to keys array
         kid,
         publicKey,
         privateKey,
         expireTime
     }
 
+    keys.push(keyData); // Add the new key to the keys array
     return keyData;
 }
 
+//helper functions to fetch keys
+function getFreshKey() {
+    return keys.find(key => key.expireTime > Date.now());
+}
+
+function getExpiredKey() {
+    return keys.find(key => key.expireTime <= Date.now());
+}
+
+
 exports.generateKeyPair = generateKeyPair;
 exports.keys = keys;
+exports.getFreshKey = getFreshKey;
+exports.getExpiredKey = getExpiredKey;
