@@ -38,12 +38,27 @@ function getFreshKey() {
     return keys.find(key => key.expireTime > Date.now());
 }
 
+function getAllFreshKeys() {
+    return keys.filter(key => key.expireTime > Date.now());
+}
+
 function getExpiredKey() {
     return keys.find(key => key.expireTime <= Date.now());
+}
+
+function getAllExpiredKeys() {
+    return keys.filter(key => key.expireTime <= Date.now());
+}
+
+function getKeyWithKid(kid) {
+    return keys.find(key => key.kid === kid);
 }
 
 
 exports.generateKeyPair = generateKeyPair;
 exports.keys = keys;
 exports.getFreshKey = getFreshKey;
+exports.getAllFreshKeys = getAllFreshKeys;
 exports.getExpiredKey = getExpiredKey;
+exports.getAllExpiredKeys = getAllExpiredKeys;
+exports.getKeyWithKid = getKeyWithKid;
