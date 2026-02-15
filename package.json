@@ -1,0 +1,32 @@
+{
+  "name": "jwksserver",
+  "version": "1.0.0",
+  "description": "JWKS server for CSCE3550",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChaseWright294/JWKSserver.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ChaseWright294/JWKSserver/issues"
+  },
+  "homepage": "https://github.com/ChaseWright294/JWKSserver#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "jose": "^6.1.3",
+    "jsonwebtoken": "^9.0.3",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "supertest": "^7.2.2"
+  }
+}
