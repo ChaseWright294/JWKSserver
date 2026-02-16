@@ -20,7 +20,7 @@ function generateKeyPair(isExpired = false) {
     //Expiration time for the key
     const expireTime = isExpired
         ? Date.now() - 1000 // Set expiration in the past for keys initialized as expired
-        : Date.now() + 60 * 1000; //keys valid for 1 minute (for testing purposes)   
+        : Date.now() + 600 * 1000; //keys valid for 10 minutes (for testing purposes)   
     
     const keyData = { //store key data in object to push to keys array
         kid,

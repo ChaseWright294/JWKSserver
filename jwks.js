@@ -24,7 +24,7 @@ async function jwksManager(req, res) { //route handling function for /jwks endpo
         }
     }
 
-    return res.status(200).json({ keys: jwks }); // return the valid keys
+    res.json(jwks); //send response
 }
 
 //get a key with a specific kid
