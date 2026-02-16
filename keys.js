@@ -1,9 +1,13 @@
 const { generateKeyPairSync } = require('crypto');
-const { v4: uuidv4 } = require('uuid');
+let uuidv4;
 
 const keys = []; //list of keys
 
-function generateKeyPair(isExpired = false) {
+async function generateKeyPair(isExpired = false) {
+    if (!uuidv4) {
+        const uuid = await import('uuid');
+        uuidv4 = uuid.v4;
+    }
     const { publicKey, privateKey } = generateKeyPairSync('rsa', {
         modulusLength: 4096,
         publicKeyEncoding: {
