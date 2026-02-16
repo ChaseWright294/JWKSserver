@@ -6,7 +6,13 @@ const { authManager } = require("./auth");
 const app = express();
 app.use(express.json());
 
-port = 8080;
+const port = 8080;
+
+//generate some keys on server startup, with some expired and some not
+for (let i = 0; i < 15; i++) {
+    const isExpired = i > 9; //10 fresh keys and 5 expired keys
+    generateKeyPair(isExpired);
+}
 
 //default path for app
 app.get('/', (req, res) => {
@@ -14,13 +20,8 @@ app.get('/', (req, res) => {
 })
 
 app.get("/.well-known/jwks.json", jwksManager); //endpoint for fetching JWKS
-app.get('/auth', authManager); //endpoint for fetching a signed JWT
-
-//generate some keys on server startup, with some expired and some not
-for (let i = 0; i < 15; i++) {
-    const isExpired = i > 9; //10 fresh keys and 5 expired keys
-    generateKeyPair(isExpired);
-}
+app.get("/.well-known/jwks.json/:kid", getKeyByKid); //endpoint for fetching a specific key by kid
+app.post('/auth', authManager); //endpoint for getting signed JWTS
 
 app.listen(port, () => {
     console.log(`JWKS server running on http://localhost:${port}`);

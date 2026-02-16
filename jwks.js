@@ -29,7 +29,7 @@ async function jwksManager(req, res) { //route handling function for /jwks endpo
 
 //get a key with a specific kid
 async function getKeyByKid(req, res) {
-    const { kid } = req.query;
+    const { kid } = req.query.kid;
 
     //check if kid is provided
     if (!kid) {

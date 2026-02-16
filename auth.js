@@ -2,27 +2,33 @@ const jwt = require("jsonwebtoken");
 const { getFreshKey, getExpiredKey } = require("./keys");
 
 function authManager(req, res) {
-    const fetchExpired = req.query.expired === 'true'; //fetch an expired key if query parameter is set to true
-
+    const fetchExpired = req.query.expired === 'true';
     const fetchedKey = fetchExpired ? getExpiredKey() : getFreshKey();
 
-    if(!fetchedKey) {
+    if (!fetchedKey) {
         return res.status(404).json({ error: 'No valid key found' });
     }
 
     const header = {
-        "alg": "RS256",
-        "typ": "JWT",
-        "kid": fetchedKey.kid
-    }
+        alg: 'RS256',
+        typ: 'JWT',
+        kid: fetchedKey.kid
+    };
 
-    const payload = { //user information, just this username because no authentication for this project
+    const now = Math.floor(Date.now() / 1000);
+    let payload = {
         sub: 'cool_username',
         name: 'Cool User',
-        iat: Math.floor(Date.now() / 1000) //issued-at-time in seconds
+        iat: now
+    };
+
+    // If expired, set exp in the past
+    if (fetchExpired) {
+        payload.exp = now - 60; // expired 1 minute ago
     }
 
-    res.json({ token }); //send the token in the response
+    const token = jwt.sign(payload, fetchedKey.privateKey, { algorithm: 'RS256', header });
+    res.json({ token });
 }
 
 exports.authManager = authManager;
