@@ -1,14 +1,9 @@
 const { generateKeyPairSync } = require('crypto');
-const db = require('./db');
-let uuidv4;
+const { database: db } = require('./db');
 
-let keys = []; //list of keys
+let keys = []; //list of keys for debugging, mostly
 
 async function generateKeyPair(isExpired = false) {
-    if (!uuidv4) {
-        const uuid = await import('uuid');
-        uuidv4 = uuid.v4;
-    }
     const { publicKey, privateKey } = generateKeyPairSync('rsa', {
         modulusLength: 4096,
         publicKeyEncoding: {
@@ -21,59 +16,173 @@ async function generateKeyPair(isExpired = false) {
         }
     });
 
-    const kid = uuidv4(); // Generate a unique key ID
     //Expiration time for the key
     const expireTime = isExpired
         ? Date.now() - 1000 // Set expiration in the past for keys initialized as expired
         : Date.now() + 60 * 60 * 1000; //keys valid for 1 hour
     
-    const keyData = { //store key data in object to push to keys array
-        kid,
-        publicKey,
-        privateKey,
-        expireTime
-    }
-
-    keys.push(keyData); //add the new key to the keys array
-    
     //serialize private key
-    const serializedPrivateKey = JSON.stringify({
-        privateKey: keyData.privateKey
-    });
+    const serializedPrivateKey = JSON.stringify(privateKey);
     
     //insert into database as BLOB
-    db.run(
-        'INSERT INTO keys (key, expires_at) VALUES (?, ?)',
-        [Buffer.from(serializedPrivateKey), keyData.expireTime],
-        (err) => {
-            if (err) {
-                console.error('Error inserting key into database:', err.message);
+    return new Promise((resolve, reject) => {
+        db.run(
+            'INSERT INTO keys (key, expires_at) VALUES (?, ?)',
+            [Buffer.from(serializedPrivateKey), expireTime],
+            function(err) {
+                if (err) {
+                    console.error('Error inserting key into database:', err.message);
+                    reject(err);
+                } else {
+                    //capture kid from database
+                    const kid = this.lastID;
+                    const keyData = {
+                        kid,
+                        publicKey,
+                        privateKey,
+                        expireTime
+                    };
+                    keys.push(keyData);
+                    console.log(`Generated key with kid: ${kid}, expires at: ${new Date(expireTime).toISOString()}`);
+                    resolve(keyData);
+                }
             }
-        }
-    );
+        );
+    });
     
-    return keyData;
+    
 }
 
 //helper functions to fetch keys
 function getFreshKey() {
-    return keys.find(key => key.expireTime > Date.now());
+    return new Promise((resolve, reject) => {
+        db.get(
+            'SELECT kid, key, expires_at FROM keys WHERE expires_at > ? LIMIT 1',
+            [Date.now()],
+            (err, row) => {
+                if (err) {
+                    console.error('Error fetching fresh key: ', err.message);
+                    reject(err);
+                } else {
+                    if (row) {
+                        const keyData = {
+                            kid: row.kid,
+                            privateKey: JSON.parse(row.key.toString()),
+                            expireTime: row.expires_at
+                        };
+                        resolve(keyData);
+                    } else {
+                        resolve(null);
+                    }
+                }
+            }
+        );
+    });
 }
 
 function getAllFreshKeys() {
-    return keys.filter(key => key.expireTime > Date.now());
+    return new Promise((resolve, reject) => {
+        db.all(
+            'SELECT kid, key, expires_at FROM keys WHERE expires_at > ?',
+            [Date.now()],
+            (err, rows) => {
+                if (err) {
+                    console.error('Error fetching fresh keys: ', err.message);
+                    reject(err);
+                } else {
+                    if (rows.length !== 0) {
+                        const keyDataArray = rows.map(row => ({
+                            kid: row.kid,
+                            privateKey: JSON.parse(row.key.toString()),
+                            expireTime: row.expires_at
+                        }));
+                        resolve(keyDataArray);
+                    } else {
+                        resolve([]);
+                    }
+                }
+            }
+        );
+    });
 }
 
 function getExpiredKey() {
-    return keys.find(key => key.expireTime <= Date.now());
+    return new Promise((resolve, reject) => {
+        db.get(
+            'SELECT kid, key, expires_at FROM keys WHERE expires_at <= ? LIMIT 1',
+            [Date.now()],
+            (err, row) => {
+                if (err) {
+                    console.error('Error fetching expired key: ', err.message);
+                    reject(err);
+                } else {
+                    if (row) {
+                        const keyData = {
+                            kid: row.kid,
+                            privateKey: JSON.parse(row.key.toString()),
+                            expireTime: row.expires_at
+                        };
+                        resolve(keyData);
+                    } else {
+                        resolve(null);
+                    }
+                }
+            }
+        );
+    });
 }
 
 function getAllExpiredKeys() {
-    return keys.filter(key => key.expireTime <= Date.now());
+    return new Promise((resolve, reject) => {
+        db.all(
+            'SELECT kid, key, expires_at FROM keys WHERE expires_at <= ?',
+            [Date.now()],
+            (err, rows) => {
+                if (err) {
+                    console.error('Error fetching expired keys: ', err.message);
+                    reject(err);
+                } else {
+                    if (rows.length !== 0) {
+                        const keyDataArray = rows.map(row => ({
+                            kid: row.kid,
+                            privateKey: JSON.parse(row.key.toString()),
+                            expireTime: row.expires_at
+                        }));
+                        resolve(keyDataArray);
+                    } else {
+                        resolve([]);
+                    }
+                }
+            }
+        );
+    });
 }
 
 function getKeyWithKid(kid) {
-    return keys.find(key => key.kid === kid);
+    return new Promise((resolve, reject) => {
+        db.get(
+            'SELECT kid, key, expires_at FROM keys WHERE kid = ?',
+            [kid],
+            (err, row) => {
+                if (err) {
+                    console.error(`Error fetching key with kid ${kid}: `, err.message);
+                    reject(err);
+                } else {
+                    if (row) {
+                        const keyData = {
+                            kid: row.kid,
+                            privateKey: JSON.parse(row.key.toString()),
+                            expireTime: row.expires_at
+                        };
+                        resolve(keyData);
+                    } else {
+                        resolve(null);
+                    }
+                }
+            }
+        );
+    });
+
 }
 
 

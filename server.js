@@ -2,7 +2,7 @@ const express = require('express'); //using express for server
 const { generateKeyPair } = require("./keys");
 const { jwksManager, getKeyByKid } = require("./jwks");
 const { authManager } = require("./auth");
-const db = require('./db');
+const { database: db } = require('./db');
 
 const app = express();
 app.use(express.json());
@@ -12,7 +12,6 @@ const port = 8080;
 //generate some keys on server startup, with some expired and some not
 generateKeyPair(true);
 generateKeyPair(true);
-
 
 //only GET requests are allowed
 app.all('/.well-known/jwks.json', (req, res, next) => {
@@ -36,4 +35,4 @@ app.listen(port, () => {
     console.log(`JWKS server running on http://localhost:${port}`);
 });
 
-module.exports = {db, app};
+module.exports = app;

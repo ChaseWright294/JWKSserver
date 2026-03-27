@@ -2,7 +2,7 @@ const { exportJWK, importSPKI } = require('jose');
 const { getAllFreshKeys, getKeyWithKid } = require('./keys'); //rubric only mentions unexpired keys for this part
 
 async function jwksManager(req, res) { //route handling function for /jwks endpoint
-    const freshKeys = getAllFreshKeys();
+    const freshKeys = await getAllFreshKeys();
 
     const jwks = {
         keys: []
@@ -36,7 +36,7 @@ async function getKeyByKid(req, res) {
         return res.status(400).json({ error: 'kid query parameter is required' });
     }
 
-    const fetchKey = getKeyWithKid(kid);
+    const fetchKey = await getKeyWithKid(kid);
 
     //check if key exists and is not expired
     if (!fetchKey || fetchKey.expireTime <= Date.now()) {
