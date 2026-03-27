@@ -29,6 +29,14 @@ for (let i = 0; i < 15; i++) {
     generateKeyPair(isExpired);
 }
 
+//only GET requests are allowed
+app.all('/.well-known/jwks.json', (req, res, next) => {
+  if (req.method !== 'GET') {
+    return res.status(405).send('Method Not Allowed');
+  }
+  next();
+});
+
 //default path for app
 app.get('/', (req, res) => {
   res.send('JWKS server running')
@@ -36,6 +44,7 @@ app.get('/', (req, res) => {
 
 app.get("/.well-known/jwks.json", jwksManager); //endpoint for fetching JWKS
 app.get("/.well-known/jwks.json/:kid", getKeyByKid); //endpoint for fetching a specific key by kid
+
 app.post('/auth', authManager); //endpoint for getting signed JWTS
 
 app.listen(port, () => {
