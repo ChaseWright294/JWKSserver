@@ -1,7 +1,8 @@
 const { generateKeyPairSync } = require('crypto');
+const db = require('./db');
 let uuidv4;
 
-const keys = []; //list of keys
+let keys = []; //list of keys
 
 async function generateKeyPair(isExpired = false) {
     if (!uuidv4) {
@@ -24,7 +25,7 @@ async function generateKeyPair(isExpired = false) {
     //Expiration time for the key
     const expireTime = isExpired
         ? Date.now() - 1000 // Set expiration in the past for keys initialized as expired
-        : Date.now() + 600 * 1000; //keys valid for 10 minutes (for testing purposes)   
+        : Date.now() + 60 * 60 * 1000; //keys valid for 1 hour
     
     const keyData = { //store key data in object to push to keys array
         kid,
@@ -33,7 +34,24 @@ async function generateKeyPair(isExpired = false) {
         expireTime
     }
 
-    keys.push(keyData); // Add the new key to the keys array
+    keys.push(keyData); //add the new key to the keys array
+    
+    //serialize private key
+    const serializedPrivateKey = JSON.stringify({
+        privateKey: keyData.privateKey
+    });
+    
+    //insert into database as BLOB
+    db.run(
+        'INSERT INTO keys (key, expires_at) VALUES (?, ?)',
+        [Buffer.from(serializedPrivateKey), keyData.expireTime],
+        (err) => {
+            if (err) {
+                console.error('Error inserting key into database:', err.message);
+            }
+        }
+    );
+    
     return keyData;
 }
 

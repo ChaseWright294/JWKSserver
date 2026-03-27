@@ -2,32 +2,17 @@ const express = require('express'); //using express for server
 const { generateKeyPair } = require("./keys");
 const { jwksManager, getKeyByKid } = require("./jwks");
 const { authManager } = require("./auth");
-const sqlite3 = require('sqlite3').verbose(); //using sqlite for database
+const db = require('./db');
 
 const app = express();
 app.use(express.json());
 
 const port = 8080;
 
-let db = new sqlite3.Database('./totally_not_my_privateKeys.db', (err) =>
-{
-    if (err) {
-        console.error('Error opening database:', err.message);
-    }
-    console.log('Connected to the SQLite database.');
-})
-
-db.run(`CREATE TABLE IF NOT EXISTS keys (
-    kid INTEGER PRIMARY KEY AUTOINCREMENT,
-    key BLOB NOT NULL,
-    expires_at INTEGER NOT NULL
-    )`);
-
 //generate some keys on server startup, with some expired and some not
-for (let i = 0; i < 15; i++) {
-    const isExpired = i > 9; //10 fresh keys and 5 expired keys
-    generateKeyPair(isExpired);
-}
+generateKeyPair(true);
+generateKeyPair(true);
+
 
 //only GET requests are allowed
 app.all('/.well-known/jwks.json', (req, res, next) => {
@@ -51,4 +36,4 @@ app.listen(port, () => {
     console.log(`JWKS server running on http://localhost:${port}`);
 });
 
-module.exports = app;  //for testing
+module.exports = {db, app};
