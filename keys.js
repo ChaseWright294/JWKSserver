@@ -38,7 +38,6 @@ async function generateKeyPair(isExpired = false) {
                     const kid = this.lastID;
                     const keyData = {
                         kid,
-                        publicKey,
                         privateKey,
                         expireTime
                     };
@@ -96,6 +95,7 @@ function getAllFreshKeys() {
                             privateKey: JSON.parse(row.key.toString()),
                             expireTime: row.expires_at
                         }));
+                        console.log(`Fetched ${keyDataArray.length} fresh keys from database`);
                         resolve(keyDataArray);
                     } else {
                         resolve([]);

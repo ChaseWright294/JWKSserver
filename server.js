@@ -10,8 +10,15 @@ app.use(express.json());
 const port = 8080;
 
 //generate some keys on server startup, with some expired and some not
+generateKeyPair();
 generateKeyPair(true);
-generateKeyPair(true);
+
+app.all('/auth', (req, res, next) => {
+    if (req.method !== 'POST') {
+        return res.status(405).send('Method Not Allowed');
+    }
+    next();
+});
 
 //only GET requests are allowed
 app.all('/.well-known/jwks.json', (req, res, next) => {
@@ -27,7 +34,7 @@ app.get('/', (req, res) => {
 })
 
 app.get("/.well-known/jwks.json", jwksManager); //endpoint for fetching JWKS
-app.get("/.well-known/jwks.json/:kid", getKeyByKid); //endpoint for fetching a specific key by kid
+app.get("/.well-known/jwks.json", getKeyByKid); //endpoint for fetching a specific key by kid
 
 app.post('/auth', authManager); //endpoint for getting signed JWTS
 

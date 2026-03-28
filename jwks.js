@@ -1,4 +1,4 @@
-const { exportJWK, importSPKI } = require('jose');
+const { exportJWK, importPKCS8 } = require('jose');
 const { getAllFreshKeys, getKeyWithKid } = require('./keys'); //rubric only mentions unexpired keys for this part
 
 async function jwksManager(req, res) { //route handling function for /jwks endpoint
@@ -11,25 +11,32 @@ async function jwksManager(req, res) { //route handling function for /jwks endpo
     //convert each valid key to JWK format
     for (const key of freshKeys) {
         try {
-            const keyObj = await importSPKI(key.publicKey, 'RS256'); // import PEM first
-            const jwk = await exportJWK(keyObj);
-            jwk.kid = key.kid;
-            jwk.use = 'sig';
-            jwk.alg = 'RS256';
+            const keyObj = await importPKCS8(key.privateKey, 'RS256', { extractable: true }); 
+            const fullJwk = await exportJWK(keyObj); //export the key
+            
+            //only include public components for JWKS
+            const jwk = {
+              kty: fullJwk.kty,
+              n: fullJwk.n,
+              e: fullJwk.e,
+              kid: key.kid,
+              use: 'sig',
+              alg: 'RS256'
+            };
 
             jwks.keys.push(jwk); //add key to response
+            console.log(`Added key with kid ${key.kid} to JWKS response`); //log added key
         }
         catch (err) {
             console.error(`Failed to export key with kid ${key.kid}:`, err);
         }
     }
-
     res.json(jwks); //send response
 }
 
 //get a key with a specific kid
 async function getKeyByKid(req, res) {
-    const { kid } = req.query.kid;
+    const kid = req.query.kid;
 
     //check if kid is provided
     if (!kid) {
@@ -44,7 +51,7 @@ async function getKeyByKid(req, res) {
     }
 
     try {
-        const keyObj = await importSPKI(fetchKey.publicKey, 'RS256'); // import PEM first
+        const keyObj = await importPKCS8(fetchKey.privateKey, 'RS256', { extractable: true });
         const jwk = await exportJWK(keyObj);
         jwk.kid = fetchKey.kid;
         jwk.use = 'sig';
