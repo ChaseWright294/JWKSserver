@@ -23,6 +23,6 @@ database.run(`CREATE TABLE IF NOT EXISTS keys (
     kid INTEGER PRIMARY KEY AUTOINCREMENT,
     key BLOB NOT NULL,
     expires_at INTEGER NOT NULL
-`);
+)`);
 
 exports.database = database;
