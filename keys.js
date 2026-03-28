@@ -28,7 +28,7 @@ async function generateKeyPair(isExpired = false) {
 
     //Expiration time for the key
     const expireTime = isExpired
-        ? Date.now() - 1000 // Set expiration in the past for keys initialized as expired
+        ? Date.now() - 60 * 60 * 1000  //1 hour already expired
         : Date.now() + 60 * 60 * 1000; //keys valid for 1 hour
     
     //serialize private key
