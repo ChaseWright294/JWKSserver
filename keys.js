@@ -1,8 +1,18 @@
+/**
+ * Key generation and management module
+ * Handles RSA key pair generation, storage, and retrieval from SQLite database
+ */
 const { generateKeyPairSync } = require('crypto');
 const { database: db } = require('./db');
 
 let keys = []; //list of keys for debugging, mostly
 
+/**
+ * Generate an RSA key pair and store it in the database
+ * @param {boolean} [isExpired=false] - If true, key is marked as already expired
+ * @returns {Promise<{kid: number, privateKey: string, expireTime: number}>} Key data with kid and expiration time
+ * @throws {Error} If database insertion fails
+ */
 async function generateKeyPair(isExpired = false) {
     const { publicKey, privateKey } = generateKeyPairSync('rsa', {
         modulusLength: 4096,
@@ -27,7 +37,7 @@ async function generateKeyPair(isExpired = false) {
     //insert into database as BLOB
     return new Promise((resolve, reject) => {
         db.run(
-            'INSERT INTO keys (key, expires_at) VALUES (?, ?)',
+            'INSERT INTO keys (key, expires_at) VALUES (?1, ?2)',
             [Buffer.from(serializedPrivateKey), expireTime],
             function(err) {
                 if (err) {
@@ -52,11 +62,15 @@ async function generateKeyPair(isExpired = false) {
     
 }
 
-//helper functions to fetch keys
+/**
+ * Retrieve a single fresh (non-expired) key from the database
+ * @returns {Promise<?{kid: number, privateKey: string, expireTime: number}>} Fresh key data or null if none available
+ * @throws {Error} If database query fails
+ */
 function getFreshKey() {
     return new Promise((resolve, reject) => {
         db.get(
-            'SELECT kid, key, expires_at FROM keys WHERE expires_at > ? LIMIT 1',
+            'SELECT kid, key, expires_at FROM keys WHERE expires_at > ?1 LIMIT 1',
             [Date.now()],
             (err, row) => {
                 if (err) {
@@ -79,10 +93,15 @@ function getFreshKey() {
     });
 }
 
+/**
+ * Retrieve all fresh (non-expired) keys from the database
+ * @returns {Promise<Array<{kid: number, privateKey: string, expireTime: number}>>} Array of fresh key data
+ * @throws {Error} If database query fails
+ */
 function getAllFreshKeys() {
     return new Promise((resolve, reject) => {
         db.all(
-            'SELECT kid, key, expires_at FROM keys WHERE expires_at > ?',
+            'SELECT kid, key, expires_at FROM keys WHERE expires_at > ?1',
             [Date.now()],
             (err, rows) => {
                 if (err) {
@@ -106,10 +125,16 @@ function getAllFreshKeys() {
     });
 }
 
+/**
+ * Retrieve a single expired key from the database
+ * Used for testing JWT validation with expired keys
+ * @returns {Promise<?{kid: number, privateKey: string, expireTime: number}>} Expired key data or null if none available
+ * @throws {Error} If database query fails
+ */
 function getExpiredKey() {
     return new Promise((resolve, reject) => {
         db.get(
-            'SELECT kid, key, expires_at FROM keys WHERE expires_at <= ? LIMIT 1',
+            'SELECT kid, key, expires_at FROM keys WHERE expires_at <= ?1 LIMIT 1',
             [Date.now()],
             (err, row) => {
                 if (err) {
@@ -132,10 +157,15 @@ function getExpiredKey() {
     });
 }
 
+/**
+ * Retrieve all expired keys from the database
+ * @returns {Promise<Array<{kid: number, privateKey: string, expireTime: number}>>} Array of expired key data
+ * @throws {Error} If database query fails
+ */
 function getAllExpiredKeys() {
     return new Promise((resolve, reject) => {
         db.all(
-            'SELECT kid, key, expires_at FROM keys WHERE expires_at <= ?',
+            'SELECT kid, key, expires_at FROM keys WHERE expires_at <= ?1',
             [Date.now()],
             (err, rows) => {
                 if (err) {
@@ -158,10 +188,16 @@ function getAllExpiredKeys() {
     });
 }
 
+/**
+ * Retrieve a specific key by its key ID (kid)
+ * @param {number} kid - The key ID to retrieve
+ * @returns {Promise<?{kid: number, privateKey: string, expireTime: number}>} Key data or null if not found
+ * @throws {Error} If database query fails
+ */
 function getKeyWithKid(kid) {
     return new Promise((resolve, reject) => {
         db.get(
-            'SELECT kid, key, expires_at FROM keys WHERE kid = ?',
+            'SELECT kid, key, expires_at FROM keys WHERE kid = ?1',
             [kid],
             (err, row) => {
                 if (err) {

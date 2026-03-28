@@ -1,6 +1,11 @@
+/**
+ * Main server module
+ * Sets up Express server with JWKS and authentication endpoints
+ * Initializes RSA key pairs on startup
+ */
 const express = require('express'); //using express for server
 const { generateKeyPair } = require("./keys");
-const { jwksManager, getKeyByKid } = require("./jwks");
+const { jwksManager } = require("./jwks");
 const { authManager } = require("./auth");
 const { database: db } = require('./db');
 
@@ -9,7 +14,7 @@ app.use(express.json());
 
 const port = 8080;
 
-//generate some keys on server startup, with some expired and some not
+//one fresh key and one expired key for testing
 generateKeyPair();
 generateKeyPair(true);
 
@@ -33,10 +38,11 @@ app.get('/', (req, res) => {
   res.send('JWKS server running')
 })
 
-app.get("/.well-known/jwks.json", jwksManager); //endpoint for fetching JWKS
-app.get("/.well-known/jwks.json", getKeyByKid); //endpoint for fetching a specific key by kid
+ //endpoint for fetching JWKS
+app.get("/.well-known/jwks.json", jwksManager);
 
-app.post('/auth', authManager); //endpoint for getting signed JWTS
+//endpoint for getting signed JWTS
+app.post('/auth', authManager); 
 
 app.listen(port, () => {
     console.log(`JWKS server running on http://localhost:${port}`);
