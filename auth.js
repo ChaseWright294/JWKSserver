@@ -12,7 +12,7 @@ async function authManager(req, res) {
     const header = {
         alg: 'RS256',
         typ: 'JWT',
-        kid: fetchedKey.kid
+        kid: String(fetchedKey.kid)
     };
 
     const now = Math.floor(Date.now() / 1000);
