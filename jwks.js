@@ -12,14 +12,14 @@ async function jwksManager(req, res) { //route handling function for /jwks endpo
     for (const key of freshKeys) {
         try {
             const keyObj = await importPKCS8(key.privateKey, 'RS256', { extractable: true }); 
-            const fullJwk = await exportJWK(keyObj); //export the key
+            const fullJwk = await exportJWK(keyObj); // export the key
             
-            //only include public components for JWKS
+            // Only include public components for JWKS
             const jwk = {
               kty: fullJwk.kty,
               n: fullJwk.n,
               e: fullJwk.e,
-              kid: key.kid,
+              kid: String(key.kid),
               use: 'sig',
               alg: 'RS256'
             };
@@ -52,10 +52,15 @@ async function getKeyByKid(req, res) {
 
     try {
         const keyObj = await importPKCS8(fetchKey.privateKey, 'RS256', { extractable: true });
-        const jwk = await exportJWK(keyObj);
-        jwk.kid = fetchKey.kid;
-        jwk.use = 'sig';
-        jwk.alg = 'RS256';
+        const fullJwk = await exportJWK(keyObj);
+        const jwk = {
+          kty: fullJwk.kty,
+          n: fullJwk.n,
+          e: fullJwk.e,
+          kid: String(fetchKey.kid),
+          use: 'sig',
+          alg: 'RS256'
+        };
         res.json(jwk);
     }
     catch (err) {

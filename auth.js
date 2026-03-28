@@ -1,9 +1,9 @@
 const jwt = require("jsonwebtoken");
 const { getFreshKey, getExpiredKey } = require("./keys");
 
-function authManager(req, res) {
+async function authManager(req, res) {
     const fetchExpired = req.query.expired === 'true';
-    const fetchedKey = fetchExpired ? getExpiredKey() : getFreshKey();
+    const fetchedKey = fetchExpired ? await getExpiredKey() : await getFreshKey();
 
     if (!fetchedKey) {
         return res.status(404).json({ error: 'No valid key found' });
@@ -28,6 +28,7 @@ function authManager(req, res) {
     }
 
     const token = jwt.sign(payload, fetchedKey.privateKey, { algorithm: 'RS256', header });
+    console.log(`Generated ${fetchExpired ? 'expired' : 'fresh'} token with kid: ${fetchedKey.kid}`);
     res.json({ token });
 }
 
